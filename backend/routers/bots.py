@@ -162,12 +162,13 @@ async def deploy_bot(
     tenant: TenantContext = Depends(get_tenant_context),
 ):
     """Activate/deploy a bot."""
+    from datetime import datetime, timezone
     from services.supabase_client import get_supabase_admin
 
     db = get_supabase_admin()
     result = (
         db.table("bots")
-        .update({"status": "active", "deployed_at": "now()"})
+        .update({"status": "active", "deployed_at": datetime.now(timezone.utc).isoformat()})
         .eq("id", bot_id)
         .eq("clinic_id", tenant.clinic_id)
         .execute()

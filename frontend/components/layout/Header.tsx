@@ -1,8 +1,5 @@
 "use client";
 
-import { Bell } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-
 interface HeaderProps {
   title: string;
   subtitle?: string;

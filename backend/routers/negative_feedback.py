@@ -55,7 +55,8 @@ async def update_feedback(
     update_data = data.model_dump(exclude_none=True)
 
     if data.resolution_status == "resolvido":
-        update_data["resolved_at"] = "now()"
+        from datetime import datetime, timezone
+        update_data["resolved_at"] = datetime.now(timezone.utc).isoformat()
 
     result = (
         db.table("negative_feedback")

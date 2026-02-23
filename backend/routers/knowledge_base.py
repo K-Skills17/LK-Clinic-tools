@@ -60,8 +60,10 @@ async def update_knowledge_base(
     from services.supabase_client import get_supabase_admin
 
     db = get_supabase_admin()
+    from datetime import datetime, timezone
+
     update_data = data.model_dump(exclude_none=True)
-    update_data["updated_at"] = "now()"
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     # Try update first
     result = (

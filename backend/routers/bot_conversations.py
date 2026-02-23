@@ -141,8 +141,9 @@ async def send_human_message(
     }).execute()
 
     # Update conversation timestamp
+    from datetime import datetime, timezone
     db.table("bot_conversations").update({
-        "last_message_at": "now()",
+        "last_message_at": datetime.now(timezone.utc).isoformat(),
     }).eq("id", conversation_id).execute()
 
     # TODO: Send via channel adapter (WhatsApp/Web) - Phase 2

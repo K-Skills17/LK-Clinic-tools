@@ -137,6 +137,8 @@ async def record_satisfaction(
     if score < 1 or score > 5:
         raise HTTPException(status_code=400, detail="Score deve ser entre 1 e 5.")
 
+    from datetime import datetime, timezone
+
     # Determine next status based on score
     clinic = db.table("clinics").select("satisfaction_threshold").eq("id", tenant.clinic_id).single().execute()
     threshold = clinic.data.get("satisfaction_threshold", 4) if clinic.data else 4
@@ -152,7 +154,7 @@ async def record_satisfaction(
         "satisfaction_score": score,
         "feedback_text": feedback,
         "status": new_status,
-        "responded_at": "now()",
+        "responded_at": datetime.now(timezone.utc).isoformat(),
     }
 
     result = (
