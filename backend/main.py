@@ -7,33 +7,51 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
+import traceback
+import sys
 
-from config import get_settings
-from routers import (
-    agency_dashboard,
-    analytics,
-    appointments,
-    auth,
-    bot_contacts,
-    bot_conversations,
-    bots,
-    clinics,
-    google_reviews,
-    knowledge_base,
-    message_templates,
-    negative_feedback,
-    reminders,
-    review_requests,
-    review_responses,
-    seo_alerts,
-    seo_monitor,
-    waitlist,
-    webhooks,
-)
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.errors import RateLimitExceeded
+    from slowapi.middleware import SlowAPIMiddleware
+    from slowapi.util import get_remote_address
+except Exception as e:
+    print(f"STARTUP ERROR importing slowapi: {e}", flush=True)
+    traceback.print_exc()
+
+try:
+    from config import get_settings
+except Exception as e:
+    print(f"STARTUP ERROR importing config: {e}", flush=True)
+    traceback.print_exc()
+    sys.exit(1)
+
+try:
+    from routers import (
+        agency_dashboard,
+        analytics,
+        appointments,
+        auth,
+        bot_contacts,
+        bot_conversations,
+        bots,
+        clinics,
+        google_reviews,
+        knowledge_base,
+        message_templates,
+        negative_feedback,
+        reminders,
+        review_requests,
+        review_responses,
+        seo_alerts,
+        seo_monitor,
+        waitlist,
+        webhooks,
+    )
+except Exception as e:
+    print(f"STARTUP ERROR importing routers: {e}", flush=True)
+    traceback.print_exc()
+    sys.exit(1)
 
 
 @asynccontextmanager
@@ -186,4 +204,18 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+try:
+    app = create_app()
+    print("APP CREATED SUCCESSFULLY", flush=True)
+except Exception as e:
+    print(f"FATAL: Failed to create app: {e}", flush=True)
+    traceback.print_exc()
+    # Create a minimal app that just shows the error
+    app = FastAPI()
+    error_msg = str(e)
+    @app.get("/health")
+    async def health_error():
+        return {"status": "error", "detail": error_msg}
+    @app.get("/")
+    async def root_error():
+        return {"status": "error", "detail": error_msg}
