@@ -58,9 +58,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        if self.is_production:
-            return [self.frontend_url]
-        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+        origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+        if self.frontend_url and self.frontend_url not in origins:
+            origins.append(self.frontend_url)
+        return origins
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
