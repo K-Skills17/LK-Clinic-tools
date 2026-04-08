@@ -59,13 +59,29 @@ export function useAuth() {
   }
 
   async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) throw error;
-    // Fetch user profile immediately so redirects work
-    await fetchUser();
+    // Fetch user profile using the token from the sign-in response directly
+    if (data.session?.access_token) {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${API_URL}/api/auth/me`, {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${data.session.access_token}`,
+          },
+        });
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        }
+      } catch {
+        // Will be retried by onAuthStateChange
+      }
+    }
   }
 
   async function signOut() {
