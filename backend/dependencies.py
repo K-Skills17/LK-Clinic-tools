@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import Depends, Header, HTTPException, status
 from jose import JWTError, jwt
 from pydantic import BaseModel
+import httpx
 
 from config import Settings, get_settings
 
@@ -72,6 +73,7 @@ async def get_token_payload(
 
     token = authorization.removeprefix("Bearer ")
 
+    # Try HS256 first (older Supabase projects), then verify via Supabase API for ES256
     try:
         payload = jwt.decode(
             token,
@@ -85,10 +87,32 @@ async def get_token_payload(
             role=payload.get("role"),
         )
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido ou expirado.",
-        )
+        pass
+
+    # ES256 fallback: verify token via Supabase auth API
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"{settings.supabase_url}/auth/v1/user",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "apikey": settings.supabase_anon_key,
+                },
+            )
+            if res.status_code == 200:
+                user_data = res.json()
+                return TokenPayload(
+                    sub=user_data.get("id", ""),
+                    email=user_data.get("email"),
+                    role=user_data.get("role"),
+                )
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido ou expirado.",
+    )
 
 
 async def get_current_user(
