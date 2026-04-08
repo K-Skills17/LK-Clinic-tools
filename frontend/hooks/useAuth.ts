@@ -64,6 +64,8 @@ export function useAuth() {
       password,
     });
     if (error) throw error;
+    // Fetch user profile immediately so redirects work
+    await fetchUser();
   }
 
   async function signOut() {
