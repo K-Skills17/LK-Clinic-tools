@@ -78,7 +78,14 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if not settings.is_production else None,
     )
 
-    # --- CORS ---
+    # --- Rate Limiting (added BEFORE CORS so CORS runs first) ---
+    limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+    app.state.limiter = limiter
+    app.add_middleware(SlowAPIMiddleware)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # --- CORS (added LAST = runs FIRST in middleware chain) ---
+    print(f"CORS origins: {settings.cors_origins}", flush=True)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -86,12 +93,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    # --- Rate Limiting ---
-    limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
-    app.state.limiter = limiter
-    app.add_middleware(SlowAPIMiddleware)
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # --- Routers ---
     api_prefix = "/api"
