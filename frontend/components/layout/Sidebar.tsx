@@ -20,6 +20,7 @@ import {
   Lightbulb,
   FileText,
   LogOut,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -45,6 +46,15 @@ const navigation: NavItem[] = [
     label: "Consultas",
     href: "/appointments",
     icon: <Calendar size={20} />,
+  {
+    label: "Campanhas",
+    href: "/campaigns",
+    icon: <Send size={20} />,
+    children: [
+      { label: "Todas", href: "/campaigns", icon: <Send size={16} /> },
+      { label: "Rascunhos", href: "/campaigns/drafts", icon: <FileText size={16} /> },
+    ],
+  },
   },
   {
     label: "Avaliações",

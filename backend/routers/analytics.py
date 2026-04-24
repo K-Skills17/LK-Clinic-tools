@@ -199,3 +199,64 @@ async def get_chatbot_analytics(
         "handoff_rate": round(human_handoff / total * 100, 1) if total > 0 else 0,
         "contacts_captured": contacts.count or 0,
     }
+
+
+@router.get("/campaigns")
+async def get_campaign_analytics(
+    period_days: int = 30,
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    """Get reactivation campaign analytics."""
+    from datetime import timedelta
+    from services.supabase_client import get_supabase_admin
+
+    db = get_supabase_admin()
+    start_date = (date.today() - timedelta(days=period_days)).isoformat()
+
+    campaigns = (
+        db.table("campaigns")
+        .select("id, name, status, created_at")
+        .eq("clinic_id", tenant.clinic_id)
+        .gte("created_at", start_date)
+        .execute()
+    )
+
+    all_campaigns = campaigns.data or []
+    total_campaigns = len(all_campaigns)
+    active = sum(1 for c in all_campaigns if c["status"] == "active")
+    completed = sum(1 for c in all_campaigns if c["status"] == "completed")
+
+    total_sent = 0
+    total_failed = 0
+    for campaign in all_campaigns:
+        contacts = (
+            db.table("campaign_contacts")
+            .select("status")
+            .eq("campaign_id", campaign["id"])
+            .execute()
+        )
+        for contact in contacts.data or []:
+            if contact["status"] == "sent":
+                total_sent += 1
+            elif contact["status"] == "failed":
+                total_failed += 1
+
+    ai_usage = (
+        db.table("ai_usage_daily")
+        .select("count")
+        .eq("clinic_id", tenant.clinic_id)
+        .gte("usage_date", start_date)
+        .execute()
+    )
+    total_ai = sum(r["count"] for r in ai_usage.data or [])
+
+    return {
+        "period_days": period_days,
+        "total_campaigns": total_campaigns,
+        "active": active,
+        "completed": completed,
+        "messages_sent": total_sent,
+        "messages_failed": total_failed,
+        "success_rate": round(total_sent / (total_sent + total_failed) * 100, 1) if (total_sent + total_failed) > 0 else 0,
+        "ai_generations": total_ai,
+    }

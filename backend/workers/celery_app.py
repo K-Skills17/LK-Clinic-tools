@@ -21,6 +21,7 @@ app = Celery(
         "workers.digest_tasks",
         "workers.calendar_sync_tasks",
         "workers.cleanup_tasks",
+        "workers.campaign_tasks",
     ],
 )
 
@@ -43,13 +44,13 @@ app.conf.beat_schedule = {
     # Every 1 minute: check for reminders to send
     "check-reminders": {
         "task": "workers.reminder_tasks.process_pending_reminders",
-        "schedule": 60.0,  # Every 60 seconds
+        "schedule": 60.0,
     },
 
     # Every 15 minutes: Google Calendar sync
     "calendar-sync": {
         "task": "workers.calendar_sync_tasks.sync_all_calendars",
-        "schedule": 900.0,  # Every 15 minutes
+        "schedule": 900.0,
     },
 
     # Daily 7am: GBP snapshots
@@ -92,5 +93,17 @@ app.conf.beat_schedule = {
     "daily-cleanup": {
         "task": "workers.cleanup_tasks.cleanup_old_data",
         "schedule": crontab(hour=0, minute=0),
+    },
+
+    # Every 5 minutes: auto-complete finished campaigns
+    "campaign-auto-complete": {
+        "task": "workers.campaign_tasks.auto_complete_campaigns",
+        "schedule": 300.0,
+    },
+
+    # Daily 00:30: cleanup old AI usage records
+    "campaign-ai-cleanup": {
+        "task": "workers.campaign_tasks.cleanup_old_ai_usage",
+        "schedule": crontab(hour=0, minute=30),
     },
 }

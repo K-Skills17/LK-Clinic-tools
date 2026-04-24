@@ -47,6 +47,8 @@ try:
         seo_monitor,
         waitlist,
         webhooks,
+        campaigns,
+        ai_generation,
     )
 except Exception as e:
     print(f"STARTUP ERROR importing routers: {e}", flush=True)
@@ -188,6 +190,18 @@ def create_app() -> FastAPI:
         message_templates.router,
         prefix=f"{api_prefix}/clinics/{{clinic_id}}/templates",
         tags=["Templates de Mensagem"],
+    )
+
+    # Module 5: Reactivation Campaigns
+    app.include_router(
+        campaigns.router,
+        prefix=f"{api_prefix}/clinics/{{clinic_id}}/campaigns",
+        tags=["Campanhas de Reativacao"],
+    )
+    app.include_router(
+        ai_generation.router,
+        prefix=f"{api_prefix}/clinics/{{clinic_id}}/ai-generate",
+        tags=["Geracao IA"],
     )
 
     # Webhooks (external)
